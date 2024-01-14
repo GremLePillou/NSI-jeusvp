@@ -1,144 +1,90 @@
+import pyxel
+import random
 
-        self.graphismes = graphismes or []
-        self.choix = choix or {}
+class Etape:
+    def __init__(self, description, sprite_id):
+        self.description = description
+        self.sprite_id = sprite_id
+        self.choix = []
 
     def ajouter_choix(self, choix, etape_suivante):
-        self.choix[choix] = etape_suivante
+        self.choix.append({"texte": choix, "etape_suivante": etape_suivante})
 
-class GestionnaireChoix:
-    @staticmethod
-    def valider_choix(choix_possibles, choix_utilisateur):
-        return choix_utilisateur in choix_possibles
-
-class StatistiquesSuivi:
+class Joueur:
     def __init__(self):
-        self.nombres_choix_faits = 0
-        self.choix_par_etape = {}
+        self.x = 80  # Position initiale x
+        self.y = 60  # Position initiale y
+        self.etape_actuelle = None
+        self.statistiques_suivi = {"nombre_choix_faits": 0, "choix_par_etape": {}}
 
-    def enregistrer_choix(self, etape, choix_utilisateur):
-        self.nombres_choix_faits += 1
-        if etape.description not in self.choix_par_etape:
-            self.choix_par_etape[etape.description] = {}
-        self.choix_par_etape[etape.description][choix_utilisateur] = self.choix_par_etape[etape.description].get(choix_utilisateur, 0) + 1
+    def enregistrer_choix(self, choix_utilisateur):
+        self.statistiques_suivi["nombre_choix_faits"] += 1
+        if self.etape_actuelle.description not in self.statistiques_suivi["choix_par_etape"]:
+            self.statistiques_suivi["choix_par_etape"][self.etape_actuelle.description] = {}
+        self.statistiques_suivi["choix_par_etape"][self.etape_actuelle.description][choix_utilisateur] = \
+            self.statistiques_suivi["choix_par_etape"][self.etape_actuelle.description].get(choix_utilisateur, 0) + 1
 
-    def afficher_statistiques(self):
-        print("Statistiques de jeu:")
-        print(f"Nombre total de choix faits : {self.nombres_choix_faits}")
-        print("Choix par étape :")
-        for etape, choix in self.choix_par_etape.items():
-            print(f"- {etape}: {choix}")
+# Création d'une instance de Joueur
+joueur = Joueur()
 
-class ModuleGraphismes:
-    @staticmethod
-    def afficher_graphismes(graphismes):
-        for ligne in graphismes:
-            print(ligne)
-            time.sleep(0.5)  # Ajout d'une pause pour une meilleure lisibilité
+# Création des étapes
+etape1 = Etape("Vous êtes dans une forêt sombre. Choisissez votre direction.", 0)
+etape2a = Etape("Vous trouvez une clairière ensoleillée.", 1)
+etape2b = Etape("Vous vous perdez dans les bois.", 2)
 
-def afficher_description(description):
-    print(description)
-    time.sleep(1)
+# Définir les choix possibles entre les étapes
+etape1.ajouter_choix("Aller vers le nord", etape2a)
+etape1.ajouter_choix("Aller vers le sud", etape2b)
 
-def demander_choix(choix_possibles):
-    choix_utilisateur = input("Choisissez parmi {} : ".format(", ".join(choix_possibles)))
-    return choix_utilisateur
+etape2a.ajouter_choix("Explorer la clairière", etape3a)
+etape2b.ajouter_choix("Retourner en arrière", etape1)
+etape2b.ajouter_choix("Continuer à errer", etape3b)
 
-def jouer_histoire(etape_initiale, gestionnaire_choix, statistiques_suivi, module_graphismes):
-    etape_actuelle = etape_initiale
+# Initialiser Pyxel
+pyxel.init(160, 120, caption="Jeu d'Aventure Pyxel")
 
-    while True:
-        # Afficher les graphismes
-        module_graphismes.afficher_graphismes(etape_actuelle.graphismes)
+# Charger les sprites
+pyxel.image(0).load("foret_sprites.png")  # Remplace "foret_sprites.png" par le chemin de ton image de la forêt
+pyxel.image(1).load("clairiere_sprites.png")  # Remplace "clairiere_sprites.png" par le chemin de ton image de la clairière
+pyxel.image(2).load("bois_perdus_sprites.png")  # Remplace "bois_perdus_sprites.png" par le chemin de ton image des bois perdus
 
-        # Afficher la description de l'étape
-        afficher_description(etape_actuelle.description)
+# Fonction de gestion de l'input
+def gestion_input():
+    if pyxel.btn(pyxel.KEY_W):
+        joueur.y -= 1
+    elif pyxel.btn(pyxel.KEY_S):
+        joueur.y += 1
+    elif pyxel.btn(pyxel.KEY_A):
+        joueur.x -= 1
+    elif pyxel.btn(pyxel.KEY_D):
+        joueur.x += 1
 
-        # Afficher les choix disponibles
-        choix_possibles = etape_actuelle.choix.keys()
-        choix_utilisateur = demander_choix(choix_possibles)
+# Fonction de gestion des choix de l'utilisateur
+def choix_utilisateur(index):
+    choix = joueur.etape_actuelle.choix[index]
+    joueur.etape_actuelle = choix["etape_suivante"]
+    joueur.enregistrer_choix(choix["texte"])
 
-        # Valider le choix
-        if gestionnaire_choix.valider_choix(choix_possibles, choix_utilisateur):
-            etape_actuelle = etape_actuelle.choix[choix_utilisateur]
-            statistiques_suivi.enregistrer_choix(etape_actuelle, choix_utilisateur)
-        else:
-            print("Choix invalide. Veuillez choisir à nouveau.")
+# Boucle principale
+def update():
+    gestion_input()
 
-# ... (les importations et les classes précédentes restent inchangées)
+def draw():
+    pyxel.cls(0)  # Efface l'écran
 
-if __name__ == "__main__":
-    # Création des étapes
-    etape1 = Etape("Vous êtes dans une forêt sombre. Choisissez votre direction.")
-    etape1.graphismes = text2art("Forêt")
+    # Affiche le sprite de l'étape
+    pyxel.blt(0, 0, 0, 0, 0, 160, 120, 0)
 
-    etape2a = Etape("Vous trouvez une clairière ensoleillée.", ["   🌳🌳🌳🌳🌳   ",
-                                                                " 🌲       🌲 ",
-                                                                "🌳         🌳",
-                                                                "🌲         🌲",
-                                                                " 🌳       🌳 ",
-                                                                "   🌳🌳🌳🌳🌳   "], {"Aller vers le nord": Etape("Vous trouvez une rivière.")})
+    # Affiche le sprite du joueur
+    pyxel.blt(joueur.x, joueur.y, 0, 16, 0, 16, 16, 0)  # Utilise le sprite à la colonne 16 pour le joueur
 
-    etape2b = Etape("Vous vous perdez dans les bois.", ["    🌲🌲🌲🌲🌲    ",
-                                                         "  🌲🌳      🌲🌲  ",
-                                                         " 🌲          🌲 ",
-                                                         "🌳            🌳",
-                                                         " 🌲          🌲 ",
-                                                         "  🌲🌳      🌲🌲  ",
-                                                         "    🌲🌲🌲🌲🌲    "], {"Retourner en arrière": etape1, "Continuer à errer": Etape("Vous trouvez une grotte sombre.")})
+    # Affiche la description de l'étape
+    pyxel.text(10, 10, joueur.etape_actuelle.description, 7)
 
-    etape3a = Etape("Vous pêchez dans la rivière.", ["    ~~~~~~    ",
-                                                      "   ~      ~   ",
-                                                      "  ~   🎣   ~  ",
-                                                      "   ~      ~   ",
-                                                      "    ~~~~~~    "], {"Rester à pêcher": Etape("Vous attrapez un poisson."), "Partir à l'aventure": Etape("Vous trouvez un village.")})
-    
-    etape3b = Etape("Vous explorez la grotte.", ["  _______  ",
-                                                 " /       \\",
-                                                 "/         \\",
-                                                 "\\         /",
-                                                 " \\_______/"], {"Continuer plus profondément": Etape("Vous trouvez un trésor."), "Rebrousser chemin": etape1})
+    # Affiche les choix disponibles
+    for i, choix in enumerate(joueur.etape_actuelle.choix):
+        pyxel.text(10, 30 + i * 10, f"{i + 1}. {choix['texte']}", 7)
 
-    etape4a = Etape("Vous arrivez au village.", ["    🏡🏡🏡    ",
-                                                  "   |     |   ",
-                                                  "   |     |   ",
-                                                  "   |_____|   ",
-                                                  "              ",
-                                                  "Bienvenue au village ! Choisissez votre prochaine action."],
-                    {"Visiter l'auberge": Etape("Vous rencontrez un mystérieux étranger."),
-                     "Explorer la place du marché": Etape("Vous découvrez une boutique magique.")})
-    
-    etape4b = Etape("Vous ouvrez le trésor.", ["  💰💰💰💰💰  ",
-                                               " 💎      💎 ",
-                                               "💰          💰",
-                                               "💰   TREASURE💰",
-                                               " 💎      💎 ",
-                                               "  💰💰💰💰💰  "],
-                    {"Obtenir une épée magique": Etape("Vous êtes prêt pour l'aventure !"),
-                     "Libérer un monstre": Etape("Le monstre vous attaque. Fin de l'aventure.")})
-
-    etape5a = Etape("Vous discutez avec l'étranger mystérieux.", ["   🤖🤖🤖   ",
-                                                                  "   |   |    ",
-                                                                  "   |   |    ",
-                                                                  "   |   |    ",
-                                                                  "  /     \\   ",
-                                                                  "Bienvenue, aventurier. J'ai une quête pour vous.",
-                                                                  "Acceptez-vous ?"],
-                    {"Accepter sa quête": Etape("Une nouvelle aventure commence."),
-                     "Refuser et partir": etape1})
-
-    # ... (définir les choix possibles entre les étapes)
-
-    # Créer un gestionnaire de choix
-    gestionnaire_choix = GestionnaireChoix()
-
-    # Créer un gestionnaire de statistiques et de suivi
-    statistiques_suivi = StatistiquesSuivi()
-
-    # Créer un module de graphismes
-    module_graphismes = ModuleGraphismes()
-
-    # Commencer l'histoire
-    jouer_histoire(etape1, gestionnaire_choix, statistiques_suivi, module_graphismes)
-
-    # Afficher les statistiques à la fin
-    statistiques_suivi.afficher_statistiques()
+# Début du jeu
+joueur.etape_actuelle = etape1
+pyxel.run(update, draw)
