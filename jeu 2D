@@ -1,90 +1,89 @@
-import pyxel
-import random
+import pygame
+import sys
 
-class Etape:
-    def __init__(self, description, sprite_id):
-        self.description = description
-        self.sprite_id = sprite_id
-        self.choix = []
+pygame.init()
 
-    def ajouter_choix(self, choix, etape_suivante):
-        self.choix.append({"texte": choix, "etape_suivante": etape_suivante})
+# Dimensions de la fenêtre
+width, height = 800, 600
 
-class Joueur:
-    def __init__(self):
-        self.x = 80  # Position initiale x
-        self.y = 60  # Position initiale y
-        self.etape_actuelle = None
-        self.statistiques_suivi = {"nombre_choix_faits": 0, "choix_par_etape": {}}
+background_color = (173, 216, 230)
 
-    def enregistrer_choix(self, choix_utilisateur):
-        self.statistiques_suivi["nombre_choix_faits"] += 1
-        if self.etape_actuelle.description not in self.statistiques_suivi["choix_par_etape"]:
-            self.statistiques_suivi["choix_par_etape"][self.etape_actuelle.description] = {}
-        self.statistiques_suivi["choix_par_etape"][self.etape_actuelle.description][choix_utilisateur] = \
-            self.statistiques_suivi["choix_par_etape"][self.etape_actuelle.description].get(choix_utilisateur, 0) + 1
+# Création de la fenêtre
+screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption("La faille des légendes")
 
-# Création d'une instance de Joueur
-joueur = Joueur()
+# Chargement de l'image du bonhomme et redimensionnement
+original_bonhomme_image = pygame.image.load("maitreyii.png")
+original_bonhomme_image2 = pygame.image.load("gp.png")
+original_bonhomme_rect = original_bonhomme_image.get_rect()
+original_bonhomme_rect2 = original_bonhomme_image2.get_rect()
+bonhomme_scale_factor = 0.2  # Ajustez le facteur d'échelle selon vos besoins
 
-# Création des étapes
-etape1 = Etape("Vous êtes dans une forêt sombre. Choisissez votre direction.", 0)
-etape2a = Etape("Vous trouvez une clairière ensoleillée.", 1)
-etape2b = Etape("Vous vous perdez dans les bois.", 2)
+# Bonhomme à gauche (interactif)
+bonhomme1_image = pygame.transform.scale(original_bonhomme_image,
+                                         (int(original_bonhomme_rect.width * bonhomme_scale_factor),
+                                          int(original_bonhomme_rect.height * bonhomme_scale_factor)))
+bonhomme1_rect = bonhomme1_image.get_rect()
+bonhomme1_x, bonhomme1_y = width // 4 - bonhomme1_rect.width // 2, height // 2 - bonhomme1_rect.height // 2
+bonhomme1_speed = 5
 
-# Définir les choix possibles entre les étapes
-etape1.ajouter_choix("Aller vers le nord", etape2a)
-etape1.ajouter_choix("Aller vers le sud", etape2b)
+# Bonhomme à droite (non interactif)
+bonhomme2_image = pygame.transform.scale(original_bonhomme_image2,
+                                         (int(original_bonhomme_rect2.width * bonhomme_scale_factor),
+                                          int(original_bonhomme_rect2.height * bonhomme_scale_factor)))
+bonhomme2_rect = bonhomme2_image.get_rect()
+bonhomme2_x, bonhomme2_y = width * 3 // 4 - bonhomme2_rect.width // 2, height // 2 - bonhomme2_rect.height // 2
 
-etape2a.ajouter_choix("Explorer la clairière", etape3a)
-etape2b.ajouter_choix("Retourner en arrière", etape1)
-etape2b.ajouter_choix("Continuer à errer", etape3b)
+# Distance minimale entre les bonhommes pour l'interaction
+interaction_distance = 20
 
-# Initialiser Pyxel
-pyxel.init(160, 120, caption="Jeu d'Aventure Pyxel")
+dialogue = "Appuyez sur 'E' pour parler à GP"
 
-# Charger les sprites
-pyxel.image(0).load("foret_sprites.png")  # Remplace "foret_sprites.png" par le chemin de ton image de la forêt
-pyxel.image(1).load("clairiere_sprites.png")  # Remplace "clairiere_sprites.png" par le chemin de ton image de la clairière
-pyxel.image(2).load("bois_perdus_sprites.png")  # Remplace "bois_perdus_sprites.png" par le chemin de ton image des bois perdus
+# Font pour le texte
+font = pygame.font.Font(None, 36)
 
-# Fonction de gestion de l'input
-def gestion_input():
-    if pyxel.btn(pyxel.KEY_W):
-        joueur.y -= 1
-    elif pyxel.btn(pyxel.KEY_S):
-        joueur.y += 1
-    elif pyxel.btn(pyxel.KEY_A):
-        joueur.x -= 1
-    elif pyxel.btn(pyxel.KEY_D):
-        joueur.x += 1
-
-# Fonction de gestion des choix de l'utilisateur
-def choix_utilisateur(index):
-    choix = joueur.etape_actuelle.choix[index]
-    joueur.etape_actuelle = choix["etape_suivante"]
-    joueur.enregistrer_choix(choix["texte"])
+text_color = (255, 255, 255)
 
 # Boucle principale
-def update():
-    gestion_input()
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
 
-def draw():
-    pyxel.cls(0)  # Efface l'écran
+        # Gestion de l'événement clavier pour la touche 'E'
+        if pygame.key.get_pressed()[pygame.K_e]:
+            if abs(bonhomme1_x - bonhomme2_x) < 200:
+                dialogue = "Résout l'énigme suivante: 2 + 2 = ??"
 
-    # Affiche le sprite de l'étape
-    pyxel.blt(0, 0, 0, 0, 0, 160, 120, 0)
+    # Gestion des touches pressées (bonhomme1 à gauche)
+    keys = pygame.key.get_pressed()
 
-    # Affiche le sprite du joueur
-    pyxel.blt(joueur.x, joueur.y, 0, 16, 0, 16, 16, 0)  # Utilise le sprite à la colonne 16 pour le joueur
+    # Mise à jour de la position du bonhomme1
+    if bonhomme1_x < bonhomme2_x - interaction_distance or bonhomme1_x > bonhomme2_x + bonhomme2_rect.width + interaction_distance:
+        bonhomme1_x += (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]) * bonhomme1_speed
 
-    # Affiche la description de l'étape
-    pyxel.text(10, 10, joueur.etape_actuelle.description, 7)
+    # Si bonhomme1 atteint le bord droit, réinitialiser à gauche
+    if bonhomme1_x > width // 2 - bonhomme1_rect.width // 2:
+        bonhomme1_x = 0 - bonhomme1_rect.width
 
-    # Affiche les choix disponibles
-    for i, choix in enumerate(joueur.etape_actuelle.choix):
-        pyxel.text(10, 30 + i * 10, f"{i + 1}. {choix['texte']}", 7)
+    # Remplissage de l'écran avec la couleur de fond
+    screen.fill(background_color)
 
-# Début du jeu
-joueur.etape_actuelle = etape1
-pyxel.run(update, draw)
+    # Affichage du bonhomme1 à sa nouvelle position
+    screen.blit(bonhomme1_image, (bonhomme1_x, bonhomme1_y))
+
+    # Affichage du bonhomme2 (non interactif) à sa position fixe
+    screen.blit(bonhomme2_image, (bonhomme2_x, bonhomme2_y))
+
+    # Affichage du dialogue
+    text_surface = font.render(dialogue, True, text_color)
+    screen.blit(text_surface, (width // 2 - text_surface.get_width() // 2, height - 50))
+
+    # Rafraîchissement de l'écran
+    pygame.display.flip()
+
+    # Limite de vitesse de la boucle
+    pygame.time.Clock().tick(30)
+    
+    #Pour plus tard, écran d'acceuil avec jouer/quitter ; Travailler l'interaction ; ajouter des réponses aux énigmes ; Ajouter un système de points ; ajouter un systeme qui ferme ton jeu si tu te rompes plus de 3 fois.
