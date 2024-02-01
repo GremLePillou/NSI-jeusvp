@@ -85,5 +85,7 @@ while True:
 
     # Limite de vitesse de la boucle
     pygame.time.Clock().tick(30)
-    
+    #⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️ Pour le bon déroulé du jeu, télécharger deux images, "maitreyii.png" et "gp.png", et les positionner sur le bureau,
+    #Lors du choix de l'image, il faut bien s'assurer d'aller sur le lien de l'image avant de la télécharger afin de s'assurer que l'image soit en .png ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+
     #Pour plus tard, écran d'acceuil avec jouer/quitter ; Travailler l'interaction ; ajouter des réponses aux énigmes ; Ajouter un système de points ; ajouter un systeme qui ferme ton jeu si tu te rompes plus de 3 fois.
