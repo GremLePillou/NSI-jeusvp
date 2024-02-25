@@ -1,93 +1,152 @@
 import pygame
-import sys
-  #⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️ Pour le bon déroulé du jeu, télécharger deux images, "maitreyii.png" et "gp.png", et les positionner sur le bureau,
-    #Lors du choix de l'image, il faut bien s'assurer d'aller sur le lien de l'image avant de la télécharger afin de s'assurer que l'image soit en .png ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+import random
+
+from pygame.locals import (
+    RLEACCEL,
+    K_UP,
+    K_DOWN,
+    K_LEFT,
+    K_RIGHT,
+    K_ESCAPE,
+    KEYDOWN,
+    QUIT,
+)
+
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+
+
+class Player(pygame.sprite.Sprite):
+    def __init__(self):
+        super(Player, self).__init__()
+        self.surf = pygame.image.load("media/jet.png").convert()
+        self.surf.set_colorkey((255, 255, 255), RLEACCEL)
+        self.rect = self.surf.get_rect()
+
+
+    def update(self, pressed_keys):
+        if pressed_keys[K_UP]:
+            self.rect.move_ip(0, -5)
+        if pressed_keys[K_DOWN]:
+            self.rect.move_ip(0, 5)
+        if pressed_keys[K_LEFT]:
+            self.rect.move_ip(-5, 0)
+        if pressed_keys[K_RIGHT]:
+            self.rect.move_ip(5, 0)
+
+        # Keep player on the screen
+        if self.rect.left < 0:
+            self.rect.left = 0
+        if self.rect.right > SCREEN_WIDTH:
+            self.rect.right = SCREEN_WIDTH
+        if self.rect.top <= 0:
+            self.rect.top = 0
+        if self.rect.bottom >= SCREEN_HEIGHT:
+            self.rect.bottom = SCREEN_HEIGHT
+
+
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self):
+        super(Enemy, self).__init__()
+        self.surf = pygame.image.load("media/missile.png").convert()
+        self.surf.set_colorkey((255, 255, 255), RLEACCEL)
+        self.rect = self.surf.get_rect(
+            center=(
+                random.randint(SCREEN_WIDTH + 20, SCREEN_WIDTH + 100),
+                random.randint(0, SCREEN_HEIGHT),
+            )
+        )
+        self.speed = random.randint(5, 20)
+
+
+    def update(self):
+        self.rect.move_ip(-self.speed, 0)
+        if self.rect.right < 0:
+            self.kill()
+
+
+class Cloud(pygame.sprite.Sprite):
+    def __init__(self):
+        super(Cloud, self).__init__()
+        self.surf = pygame.image.load("media/cloud.png").convert()
+        self.surf.set_colorkey((0, 0, 0), RLEACCEL)
+        self.rect = self.surf.get_rect(
+            center=(
+                random.randint(SCREEN_WIDTH + 20, SCREEN_WIDTH + 100),
+                random.randint(0, SCREEN_HEIGHT),
+            )
+        )
+
+    def update(self):
+        self.rect.move_ip(-5, 0)
+        if self.rect.right < 0:
+            self.kill()
+
+
+pygame.mixer.init()
 
 pygame.init()
 
-# Dimensions de la fenêtre
-width, height = 800, 600
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
-background_color = (173, 216, 230)
+ADDENEMY = pygame.USEREVENT + 1
+pygame.time.set_timer(ADDENEMY, 250)
+ADDCLOUD = pygame.USEREVENT + 2
+pygame.time.set_timer(ADDCLOUD, 1000)
 
-# Création de la fenêtre
-screen = pygame.display.set_mode((width, height))
-pygame.display.set_caption("La faille des légendes")
 
-# Chargement de l'image du bonhomme et redimensionnement
-original_bonhomme_image = pygame.image.load("maitreyii.png")
-original_bonhomme_image2 = pygame.image.load("gp.png")
-original_bonhomme_rect = original_bonhomme_image.get_rect()
-original_bonhomme_rect2 = original_bonhomme_image2.get_rect()
-bonhomme_scale_factor = 0.2  # Ajustez le facteur d'échelle selon vos besoins
+pygame.mixer.music.load("media/Apoxode_-_-_-.mp3")
+pygame.mixer.music.play(loops=-1)
 
-# Bonhomme à gauche (interactif)
-bonhomme1_image = pygame.transform.scale(original_bonhomme_image,
-                                         (int(original_bonhomme_rect.width * bonhomme_scale_factor),
-                                          int(original_bonhomme_rect.height * bonhomme_scale_factor)))
-bonhomme1_rect = bonhomme1_image.get_rect()
-bonhomme1_x, bonhomme1_y = width // 4 - bonhomme1_rect.width // 2, height // 2 - bonhomme1_rect.height // 2
-bonhomme1_speed = 5
 
-# Bonhomme à droite (non interactif)
-bonhomme2_image = pygame.transform.scale(original_bonhomme_image2,
-                                         (int(original_bonhomme_rect2.width * bonhomme_scale_factor),
-                                          int(original_bonhomme_rect2.height * bonhomme_scale_factor)))
-bonhomme2_rect = bonhomme2_image.get_rect()
-bonhomme2_x, bonhomme2_y = width * 3 // 4 - bonhomme2_rect.width // 2, height // 2 - bonhomme2_rect.height // 2
+collision_sound = pygame.mixer.Sound("media/collision.wav")
 
-# Distance minimale entre les bonhommes pour l'interaction
-interaction_distance = 20
+player = Player()
+background = pygame.Surface(screen.get_size())
+background.fill((135, 206, 250))
 
-dialogue = "Appuyez sur 'E' pour parler à GP"
+enemies = pygame.sprite.Group()
+clouds = pygame.sprite.Group()
+all_sprites = pygame.sprite.Group()
+all_sprites.add(player)
+clock = pygame.time.Clock()
 
-# Font pour le texte
-font = pygame.font.Font(None, 36)
-
-text_color = (255, 255, 255)
-
-# Boucle principale
-while True:
+running = True
+while running:
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+        if event.type == KEYDOWN and event.key == K_ESCAPE:
+            running = False
 
-        # Gestion de l'événement clavier pour la touche 'E'
-        if pygame.key.get_pressed()[pygame.K_e]:
-            if abs(bonhomme1_x - bonhomme2_x) < 200:
-                dialogue = "Résout l'énigme suivante: 2 + 2 = ??"
+        elif event.type == QUIT:
+            running = False
 
-    # Gestion des touches pressées (bonhomme1 à gauche)
-    keys = pygame.key.get_pressed()
+        elif event.type == ADDENEMY:
+            new_enemy = Enemy()
+            enemies.add(new_enemy)
+            all_sprites.add(new_enemy)
 
-    # Mise à jour de la position du bonhomme1
-    if bonhomme1_x < bonhomme2_x - interaction_distance or bonhomme1_x > bonhomme2_x + bonhomme2_rect.width + interaction_distance:
-        bonhomme1_x += (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]) * bonhomme1_speed
+        elif event.type == ADDCLOUD:
+            new_cloud = Cloud()
+            all_sprites.add(new_cloud)
+            clouds.add(new_cloud)
 
-    # Si bonhomme1 atteint le bord droit, réinitialiser à gauche
-    if bonhomme1_x > width // 2 - bonhomme1_rect.width // 2:
-        bonhomme1_x = 0 - bonhomme1_rect.width
+    screen.blit(background, (0, 0))
+    pressed_keys = pygame.key.get_pressed()
+    player.update(pressed_keys)
+    enemies.update()
+    clouds.update()
 
-    # Remplissage de l'écran avec la couleur de fond
-    screen.fill(background_color)
+    for entity in all_sprites:
+        screen.blit(entity.surf, entity.rect)
 
-    # Affichage du bonhomme1 à sa nouvelle position
-    screen.blit(bonhomme1_image, (bonhomme1_x, bonhomme1_y))
+    if pygame.sprite.spritecollideany(player, enemies):
+        player.kill()
+        collision_sound.play()
+        running = False
 
-    # Affichage du bonhomme2 (non interactif) à sa position fixe
-    screen.blit(bonhomme2_image, (bonhomme2_x, bonhomme2_y))
-
-    # Affichage du dialogue
-    text_surface = font.render(dialogue, True, text_color)
-    screen.blit(text_surface, (width // 2 - text_surface.get_width() // 2, height - 50))
-
-    # Rafraîchissement de l'écran
     pygame.display.flip()
+    clock.tick(45)
 
-    # Limite de vitesse de la boucle
-    pygame.time.Clock().tick(30)
-    #⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️ Pour le bon déroulé du jeu, télécharger deux images, "maitreyii.png" et "gp.png", et les positionner sur le bureau,
-    #Lors du choix de l'image, il faut bien s'assurer d'aller sur le lien de l'image avant de la télécharger afin de s'assurer que l'image soit en .png ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
-
-    #Pour plus tard, écran d'acceuil avec jouer/quitter ; Travailler l'interaction ; ajouter des réponses aux énigmes ; Ajouter un système de points ; ajouter un systeme qui ferme ton jeu si tu te rompes plus de 3 fois.
+pygame.mixer.music.stop()
+pygame.mixer.quit()
+pygame.quit()
